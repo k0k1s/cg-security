@@ -6,7 +6,7 @@ Admin Manage
 
 ## Screenshots
 
-![preview image](https://github.com/k0k1s/cg-security/preview.jpg)
+![preview image](https://github.com/k0k1s/cg-security/blob/master/preview.jpg)
 
 ## Installation
 
