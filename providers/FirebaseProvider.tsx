@@ -11,6 +11,7 @@ import { Loader } from '@/components';
 // Define a custom User type that extends FirebaseUser
 export interface User extends FirebaseUser {
   role: 'admin' | 'user' | null;
+  username: string | null; // Adding username to User type
 }
 
 // Create context
@@ -38,18 +39,24 @@ const resumeSession = async (): Promise<User | null> => {
       if (user) {
         try {
           const userDoc = await getDoc(doc(db, "users", user.uid));
-          const role = userDoc.exists() ? userDoc.data().role : null;
-          resolve({ ...user, role } as User);
+          const userData = userDoc.exists() ? userDoc.data() : {};
+          const role = userData.role || null;
+          const username = userData.username || user.displayName || null;
+          const email = userData.email || user.email || null;
+
+          console.log("User session resumed, role:", role, "username:", username, "email:", email);
+          resolve({ ...user, role, username, email } as User);
         } catch (error) {
-          console.error("Error fetching user role:", error);
+          console.error("Error fetching user role during session resume:", error);
           reject(error);
         }
       } else {
+        console.log("No user session found");
         resolve(null);
       }
       unsubscribe();
     }, (error) => {
-      console.error("Auth state change error:", error);
+      console.error("Auth state change error during session resume:", error);
       reject(error);
     });
   });
@@ -75,42 +82,81 @@ export const usePosts = () => {
   });
 };
 
-// Sign up function
+// Sign up function with additional data (username, email, role)
 export const signUp = async (data: SignUpSchema): Promise<User | null> => {
   try {
+    console.log("Starting Sign Up process with data:", data);
+    
     const { user } = await createUserWithEmailAndPassword(auth, data.email, data.password);
+    console.log("User created with email:", user.email);
+
+    // Update user profile with display name (username)
     await updateProfile(user, { displayName: data.username });
-    await setDoc(doc(db, "users", user.uid), { role: data.role });
-    const fullUser = { ...user, role: data.role } as User;
+    console.log("Profile updated with username:", data.username);
+
+    // Create user document in Firestore with additional info (role, email, username)
+    await setDoc(doc(db, "users", user.uid), {
+      role: data.role,
+      email: data.email,
+      username: data.username,
+      createdAt: new Date(),  // Optional: track creation timestamp
+    });
+    console.log("User document created in Firestore with role, username, and email");
+
+    const fullUser = { ...user, role: data.role, username: data.username, email: data.email } as User;
+    console.log("Full user object created:", fullUser);
+
+    // Update the query client cache
     queryClient.setQueryData(["user"], fullUser);
+    console.log("User data set in query cache");
+
     return fullUser;
-  } catch (error) {
-    console.error("Sign Up Error:", error);
+  } catch (error: any) {
+    console.error("Error during Sign Up process:", error);
     throw new Error(error.message || "Sign Up failed");
   }
 };
 
-// Login function
+// Login function with logging and fetching user details
 export const login = async (data: SignInSchema): Promise<User | null> => {
   try {
+    console.log("Starting login process with data:", data);
+    
     const { user } = await signInWithEmailAndPassword(auth, data.email, data.password);
-    const userDoc = await getDoc(doc(db, 'users', user.uid));
-    const role = userDoc.exists() ? userDoc.data().role : null;
-    const fullUser = { ...user, role } as User;
+    console.log("User logged in with email:", user.email);
+
+    // Fetch user role, username, and email from Firestore
+    const userDoc = await getDoc(doc(db, "users", user.uid));
+    const userData = userDoc.exists() ? userDoc.data() : {};
+    const role = userData.role || null;
+    const username = userData.username || user.displayName || null;
+    const email = userData.email || user.email || null;
+
+    console.log("Fetched user role, username, and email from Firestore:", role, username, email);
+
+    const fullUser = { ...user, role, username, email } as User;
+    console.log("Full user object created after login:", fullUser);
+
+    // Update the query client cache
     queryClient.setQueryData(["user"], fullUser);
+    console.log("User data set in query cache after login");
+
     return fullUser;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Login Error:", error);
     throw new Error(error.message || "Login failed");
   }
 };
 
-// Logout function
+// Logout function with logging
 export const logout = async () => {
   try {
+    console.log("Starting logout process");
+
     await signOut(auth);
     queryClient.setQueryData(["user"], null);
-  } catch (error) {
+    console.log("User signed out and query cache cleared");
+  } catch (error: any) {
     console.error("Logout Error:", error);
     throw new Error("Logout failed");
   }
@@ -121,12 +167,15 @@ interface FirebaseProviderProps {
   children: React.ReactNode;
 }
 
-// Export the provider
+// Export the provider with logging in the render process
 export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children }) => {
   const user = useUser();
   const posts = usePosts();
 
-  if (user.isLoading || posts.isLoading) return <Loader />;
+  if (user.isLoading || posts.isLoading) {
+    console.log("Loading user or posts data...");
+    return <Loader />;
+  }
 
   const value = {
     signUp,
@@ -135,6 +184,8 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children }) 
     user: user.data,
     posts: posts.data || [],
   };
+
+  console.log("Rendering FirebaseProvider with user:", user.data, "and posts:", posts.data);
 
   return (
     <FirebaseContext.Provider value={value}>

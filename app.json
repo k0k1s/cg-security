@@ -13,13 +13,26 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app uses the camera to scan QR codes.",
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to upload profile images.",
+        "NSLocationWhenInUseUsageDescription": "This app uses your location to show nearby events."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.dilz.nanayakkara.cryptogem",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "INTERNET",
+        "ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -30,7 +43,8 @@
       "expo-router"
     ],
     "experiments": {},
-    "extra": {
+    
+    "extra": {    
       "eas": {
         "projectId": "65ef1d0a-0c3f-4379-b604-1bc355ea859b"
       }

@@ -113,7 +113,7 @@ const CreatePost: React.FC = () => {
             ))}
         </ScrollView>
       </ScrollView>
-      <Button onPress={handleSubmit(onSubmit)} type="solid">
+      <Button onPress={handleSubmit(onSubmit)} type="solid" disabled={isSubmitting}>
         Submit Post
       </Button>
     </Container>
