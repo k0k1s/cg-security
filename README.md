@@ -6,7 +6,7 @@ Admin Manage
 
 ## Screenshots
 
-![mockup image](https://github.com/k0k1s/cg-security/previewc.png)
+![preview image](https://github.com/k0k1s/cg-security/preview.png)
 
 ## Installation
 
